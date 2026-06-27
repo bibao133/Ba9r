@@ -1,0 +1,99 @@
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hum = char:WaitForChild("Humanoid")
+
+-- settings
+local enabled = false
+local speed = 16
+local maxSpeed = 50000
+local holding = false
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Parent = game.CoreGui
+
+local frame = Instance.new("Frame")
+frame.Parent = gui
+frame.Size = UDim2.new(0, 220, 0, 150)
+frame.Position = UDim2.new(0.4, 0, 0.4, 0)
+frame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+frame.BackgroundTransparency = 0.35
+frame.BorderSizePixel = 2
+frame.BorderColor3 = Color3.fromRGB(170, 0, 255)
+
+local title = Instance.new("TextLabel")
+title.Parent = frame
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "speed ba9r"
+title.TextColor3 = Color3.fromRGB(255, 60, 60)
+title.BackgroundTransparency = 1
+
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Parent = frame
+speedLabel.Size = UDim2.new(1, 0, 0, 25)
+speedLabel.Position = UDim2.new(0, 0, 0, 30)
+speedLabel.Text = "Speed: 16"
+speedLabel.TextColor3 = Color3.fromRGB(255,255,255)
+speedLabel.BackgroundTransparency = 1
+
+local toggle = Instance.new("TextButton")
+toggle.Parent = frame
+toggle.Size = UDim2.new(1, -20, 0, 35)
+toggle.Position = UDim2.new(0, 10, 0, 60)
+toggle.Text = "OFF"
+toggle.BackgroundColor3 = Color3.fromRGB(40,40,40)
+toggle.TextColor3 = Color3.fromRGB(255,255,255)
+
+local holdBtn = Instance.new("TextButton")
+holdBtn.Parent = frame
+holdBtn.Size = UDim2.new(1, -20, 0, 35)
+holdBtn.Position = UDim2.new(0, 10, 0, 100)
+holdBtn.Text = "HOLD TO RUN"
+holdBtn.BackgroundColor3 = Color3.fromRGB(80,0,0)
+holdBtn.TextColor3 = Color3.fromRGB(255,255,255)
+
+-- update speed
+local function update()
+	if enabled or holding then
+		hum.WalkSpeed = speed
+	else
+		hum.WalkSpeed = 16
+	end
+	speedLabel.Text = "Speed: " .. math.floor(speed)
+end
+
+-- toggle
+toggle.MouseButton1Click:Connect(function()
+	enabled = not enabled
+	toggle.Text = enabled and "ON" or "OFF"
+	update()
+end)
+
+-- hold to run
+holdBtn.MouseButton1Down:Connect(function()
+	holding = true
+	update()
+end)
+
+holdBtn.MouseButton1Up:Connect(function()
+	holding = false
+	update()
+end)
+
+-- speed tăng theo giữ phím Shift (tuỳ chọn thêm)
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+	if input.KeyCode == Enum.KeyCode.Equals then
+		speed = math.clamp(speed + 50, 16, maxSpeed)
+		update()
+	elseif input.KeyCode == Enum.KeyCode.Minus then
+		speed = math.clamp(speed - 50, 16, maxSpeed)
+		update()
+	end
+end)
+
+-- reset khi respawn
+player.CharacterAdded:Connect(function(c)
+	char = c
+	hum = c:WaitForChild("Humanoid")
+	update()
+end)
