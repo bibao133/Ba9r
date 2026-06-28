@@ -1,0 +1,117 @@
+local UIS = game:GetService("UserInputService")
+local LP = game.Players.LocalPlayer
+local PlayerGui = LP:WaitForChild("PlayerGui")
+if PlayerGui:FindFirstChild("Ba9rESP") then PlayerGui.Ba9rESP:Destroy() end
+
+local Gui = Instance.new("ScreenGui", PlayerGui); Gui.Name = "Ba9rESP"
+local Main = Instance.new("Frame", Gui)
+Main.BackgroundColor3 = Color3.fromRGB(20,20,20); Main.Position = UDim2.new(0.5,-165,0.5,-140); Main.Size = UDim2.new(0,330,0,285)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0,8)
+Instance.new("UIStroke", Main).Color = Color3.fromRGB(45,45,50)
+
+local Bar = Instance.new("Frame", Main); Bar.BackgroundTransparency = 1; Bar.Size = UDim2.new(1,0,0,35)
+local Title = Instance.new("TextLabel", Bar)
+Title.BackgroundTransparency = 1; Title.Position = UDim2.new(0,16,0,0); Title.Size = UDim2.new(0,200,1,0); Title.Font = "GothamMedium"
+-- Đã thay đổi tiêu đề tại đây thành ba9r(PETAPETA)
+Title.Text = "ba9r(PETAPETA)"; Title.TextColor3 = Color3.fromRGB(230,230,230); Title.TextSize = 14; Title.TextXAlignment = "Left"
+
+local MinBtn = Instance.new("TextButton", Bar)
+MinBtn.BackgroundTransparency = 1; MinBtn.Position = UDim2.new(1,-40,0,0); MinBtn.Size = UDim2.new(0,35,1,0); MinBtn.Font = "Gotham"
+MinBtn.Text = "—"; MinBtn.TextColor3 = Color3.fromRGB(160, 160, 170); MinBtn.TextSize = 12; MinBtn.MouseButton1Click:Connect(function() Main.Visible = false end)
+
+local function MakeTog(title, y, cb)
+    local Lbl = Instance.new("TextLabel", Main)
+    Lbl.BackgroundTransparency = 1; Lbl.Position = UDim2.new(0,16,0,y); Lbl.Size = UDim2.new(0,180,0,20); Lbl.Font = "GothamBold"
+    Lbl.Text = title; Lbl.TextColor3 = Color3.fromRGB(255,255,255); Lbl.TextSize = 13; Lbl.TextXAlignment = "Left"
+    local Tog = Instance.new("TextButton", Main)
+    Tog.BackgroundColor3 = Color3.fromRGB(45,45,50); Tog.Position = UDim2.new(1,-65,0,y); Tog.Size = UDim2.new(0,45,0,20); Tog.Text = ""
+    Instance.new("UICorner", Tog).CornerRadius = UDim.new(1,0)
+    local Ball = Instance.new("Frame", Tog)
+    Ball.BackgroundColor3 = Color3.fromRGB(160,160,165); Ball.Position = UDim2.new(0,3,0.5,-7); Ball.Size = UDim2.new(0,14,0,14)
+    Instance.new("UICorner", Ball).CornerRadius = UDim.new(1,0)
+    local State = false
+    Tog.MouseButton1Click:Connect(function()
+        State = not State
+        Tog.BackgroundColor3 = State and Color3.fromRGB(130,80,200) or Color3.fromRGB(45,45,50)
+        Ball.Position = State and UDim2.new(1,-17,0.5,-7) or UDim2.new(0,3,0.5,-7)
+        cb(State)
+    end)
+end
+
+local SpeedOn, TargetSpeed = false, 28
+MakeTog("Speed Mods", 45, function(s) SpeedOn = s if not s and LP.Character then pcall(function() LP.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 end) end end)
+
+local S_Bg = Instance.new("Frame", Main)
+S_Bg.BackgroundColor3 = Color3.fromRGB(45,45,50); S_Bg.Position = UDim2.new(0,16,0,85); S_Bg.Size = UDim2.new(0,220,0,4)
+Instance.new("UICorner", S_Bg).CornerRadius = UDim.new(0,2)
+local S_Btn = Instance.new("TextButton", S_Bg)
+S_Btn.BackgroundColor3 = Color3.fromRGB(255,255,255); S_Btn.Size = UDim2.new(0,12,0,12); S_Btn.Text = ""
+Instance.new("UICorner", S_Btn).CornerRadius = UDim.new(1,0)
+local Box = Instance.new("TextBox", Main)
+Box.BackgroundColor3 = Color3.fromRGB(30,30,35); Box.Position = UDim2.new(1,-65,0,73); Box.Size = UDim2.new(0,45,0,26); Box.Font = "GothamMedium"
+Box.Text = "28"; Box.TextColor3 = Color3.fromRGB(240,240,245); Box.TextSize = 13; Box.ClearTextOnFocus = false
+Instance.new("UICorner", Box).CornerRadius = UDim.new(0,4)
+
+local function SetPos(spd)
+    S_Btn.Position = UDim2.new(math.clamp((spd-16)/284,0,1),-6,0.5,-6); Box.Text = tostring(math.floor(spd))
+end
+local drag = false
+S_Btn.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then drag = true end end)
+UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then drag = false end end)
+UIS.InputChanged:Connect(function(i)
+    if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+        TargetSpeed = math.floor(16 + (math.clamp((i.Position.X - S_Bg.AbsolutePosition.X) / S_Bg.AbsoluteSize.X,0,1) * 284))
+        SetPos(TargetSpeed)
+    end
+end)
+Box.FocusLost:Connect(function() local n = tonumber(Box.Text) if n then TargetSpeed = math.clamp(n,16,300) SetPos(TargetSpeed) else Box.Text = tostring(TargetSpeed) end end)
+SetPos(28)
+
+local MonOn, ItemOn, FastOpen = false, false, false
+MakeTog("Monster ESP (Quái Vật Đỏ)", 125, function(s) MonOn = s if not s then for _,v in pairs(workspace:GetDescendants()) do if v.Name == "PetaESP" then v:Destroy() end end end end)
+MakeTog("Items ESP (Vật Phẩm)", 175, function(s) ItemOn = s if not s then for _,v in pairs(workspace:GetDescendants()) do if v.Name == "ItemHL" then v:Destroy() end end end end)
+MakeTog("Instant Open (Mở Cửa Nhanh)", 225, function(s) FastOpen = s end)
+
+local function MakeHL(obj, col, hlName)
+    if not obj:FindFirstChild(hlName) then
+        local hl = Instance.new("Highlight", obj); hl.Name = hlName; hl.FillColor = col; hl.FillTransparency = 0.4; hl.OutlineColor = col; hl.OutlineTransparency = 0
+    end
+end
+
+task.spawn(function()
+    while true do task.wait(0.5)
+        if MonOn then
+            for _, o in pairs(workspace:GetDescendants()) do
+                if o:IsA("Model") and (o.Name:lower():find("monster") or o.Name:lower():find("bot") or o:FindFirstChild("HumanoidRootPart")) and o.Name ~= LP.Name and not o:IsDescendantOf(LP.Character) then
+                    MakeHL(o, Color3.fromRGB(255,0,0), "PetaESP")
+                end
+            end
+        end
+        if ItemOn then
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("Model") or v:IsA("BasePart") then
+                    local n = v.Name:lower()
+                    if n:find("ofuda") or n:find("bua") then MakeHL(v, Color3.fromRGB(175, 215, 0), "ItemHL")
+                    elseif n:find("chest") or n:find("ruong") or (n:find("box") and not n:find("ofuda")) then MakeHL(v, Color3.fromRGB(255, 120, 0), "ItemHL")
+                    elseif n:find("safe") or n:find("ket") then MakeHL(v, Color3.fromRGB(10, 10, 10), "ItemHL")
+                    elseif n:find("key") or n:find("llao") then MakeHL(v, Color3.fromRGB(130, 130, 135), "ItemHL")
+                    elseif n:find("code") or n:find("matma") or n:find("paper") then MakeHL(v, Color3.fromRGB(255, 0, 0), "ItemHL")
+                    elseif n:find("tool") or n:find("item") or n:find("giay") or v:IsA("Tool") then MakeHL(v, Color3.fromRGB(255, 215, 0), "ItemHL") end
+                end
+            end
+        end
+        if FastOpen then
+            for _, p in pairs(workspace:GetDescendants()) do
+                if p:IsA("ProximityPrompt") then p.HoldDuration = 0 end
+            end
+        end
+    end
+end)
+
+task.spawn(function() while true do task.wait(0.1) if SpeedOn and LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") then pcall(function() LP.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = TargetSpeed end) end end end)
+
+local Open = Instance.new("ImageButton", Gui)
+Open.BackgroundColor3 = Color3.fromRGB(0,0,0); Open.Position = UDim2.new(0.106,0,0.162,0); Open.Size = UDim2.new(0,40,0,40)
+Open.Image = "http://roblox.com"; Open.Draggable = true
+Instance.new("UICorner", Open).CornerRadius = UDim.new(1,10)
+Open.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
