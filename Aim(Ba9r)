@@ -1,0 +1,220 @@
+local CG = game:GetService("CoreGui")
+if CG:FindFirstChild("CustomMenu") then CG.CustomMenu:Destroy() end
+
+local SG = Instance.new("ScreenGui", CG)
+SG.Name = "CustomMenu"
+
+-- Nut mo menu hinh anh (ID: 73491161038025)
+local Btn = Instance.new("ImageButton", SG)
+Btn.BackgroundTransparency = 1
+Btn.Position = UDim2.new(0.02, 0, 0.2, 0)
+Btn.Size = UDim2.new(0, 50, 0, 50)
+Btn.Image = "rbxassetid://73491161038025"
+Btn.Draggable = true
+
+-- Khung Menu chinh
+local Frame = Instance.new("Frame", SG)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.Position = UDim2.new(0.35, 0, 0.15, 0)
+Frame.Size = UDim2.new(0, 290, 0, 380)
+Frame.Active = true Frame.Draggable = true
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 10)
+
+-- ĐÃ ĐỔI TÊN TIÊU ĐỀ MENU THÀNH BA9R(AIM) CHUẨN XỊN
+local Title = Instance.new("TextLabel", Frame)
+Title.BackgroundTransparency = 1
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "Ba9r(aim)"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 16 Title.Font = Enum.Font.SourceSansBold
+
+_G.AimActive = false
+_G.FovVisible = false
+_G.FovRadius = 30
+_G.RainbowFov = false
+_G.EspActive = false
+
+-- VÒNG TRÒN FOV 150 DẤU CHẤM CỐ ĐỊNH CHÍNH GIỮA MÀN HÌNH
+local FovContainer = Instance.new("Frame", SG)
+FovContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+FovContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+FovContainer.BackgroundTransparency = 1
+FovContainer.Visible = false
+
+local FovDots = {}
+for i = 1, 150 do
+    local dot = Instance.new("Frame", FovContainer)
+    dot.BorderSizePixel = 0
+    dot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    dot.Size = UDim2.fromOffset(2, 2)
+    FovDots[i] = dot
+end
+
+local function UpdateFovDots()
+    local r = _G.FovRadius * 5.5
+    FovContainer.Size = UDim2.fromOffset(r * 2, r * 2)
+    for i, dot in ipairs(FovDots) do
+        local angle = (i / 150) * math.pi * 2
+        dot.Position = UDim2.new(
+            0.5 + math.cos(angle) * 0.5, 0,
+            0.5 + math.sin(angle) * 0.5, 0
+        )
+    end
+end
+UpdateFovDots()
+
+local function MakeToggle(txt, y, callback)
+    local b = Instance.new("TextButton", Frame)
+    b.Size = UDim2.new(0, 250, 0, 38)
+    b.Position = UDim2.new(0, 20, 0, y)
+    b.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    b.Text = txt .. ": TẮT"
+    b.TextColor3 = Color3.fromRGB(255, 100, 100)
+    b.TextSize = 14 b.Font = Enum.Font.SourceSans
+    Instance.new("UICorner", b)
+
+    local s = false
+    b.MouseButton1Click:Connect(function()
+        s = not s
+        b.Text = s and (txt..": BẬT") or (txt..": TẮT")
+        b.TextColor3 = s and Color3.fromRGB(100,255,100) or Color3.fromRGB(255,100,100)
+        callback(s)
+    end)
+end
+
+MakeToggle("Bật Vòng Tròn FOV", 50, function(v) _G.FovVisible = v FovContainer.Visible = v end)
+MakeToggle("Rainbow", 100, function(v) _G.RainbowFov = v end)
+MakeToggle("Bật Aim Đầu (Siêu dính)", 150, function(v) _G.AimActive = v end)
+MakeToggle("Bật ESP (Xem Xuyên Tường)", 200, function(v) _G.EspActive = v end)
+
+local Box = Instance.new("TextBox", Frame)
+Box.Size = UDim2.new(0, 250, 0, 38)
+Box.Position = UDim2.new(0, 20, 0, 250)
+Box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Box.Text = "Chỉnh FOV (10, 30, 60, 90)"
+Box.TextColor3 = Color3.fromRGB(200, 200, 200)
+Box.TextSize = 14 Box.Font = Enum.Font.SourceSans
+Instance.new("UICorner", Box)
+
+Box.FocusLost:Connect(function()
+    local n = tonumber(Box.Text)
+    if n == 10 or n == 30 or n == 60 or n == 90 then
+        _G.FovRadius = n
+        UpdateFovDots()
+        Box.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        Box.Text = "Chỉ nhận số: 10, 30, 60, 90!"
+        Box.TextColor3 = Color3.fromRGB(255, 50, 50)
+    end
+end)
+
+Btn.MouseButton1Click:Connect(function() Frame.Visible = not Frame.Visible end)
+
+-- ENGINE LOGIC ĐA NĂNG
+local Plrs = game:GetService("Players")
+local LP = Plrs.LocalPlayer
+local Cam = workspace.CurrentCamera
+
+local function IsHeadVisible(part)
+    if not LP.Character then return false end
+    local castParams = RaycastParams.new()
+    castParams.FilterType = Enum.RaycastFilterType.Exclude
+    
+    local ignoreList = {LP.Character, Cam}
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and (obj.Transparency > 0.8 or obj.CanCollide == false) then
+            table.insert(ignoreList, obj)
+        end
+    end
+    castParams.FilterDescendantsInstances = ignoreList
+    
+    local startPos = Cam.CFrame.Position
+    local dir = (part.Position - startPos)
+    local res = workspace:Raycast(startPos, dir, castParams)
+    
+    return res and res.Instance:IsDescendantOf(part.Parent) or false
+end
+
+local function GetTarget()
+    local target, close = nil, math.huge
+    local centerScreen = Vector2.new(Cam.ViewportSize.X / 2, Cam.ViewportSize.Y / 2)
+    
+    for _, p in pairs(Plrs:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChildOfClass("Humanoid") and p.Character.Humanoid.Health > 0 then
+            local head = p.Character.Head
+            local screenPos, onScreen = Cam:WorldToViewportPoint(head.Position)
+            if onScreen then
+                local d = (Vector2.new(screenPos.X, screenPos.Y) - centerScreen).Magnitude
+                if d < (_G.FovRadius * 5.5) and d < close and IsHeadVisible(head) then
+                    target, close = head, d
+                end
+            end
+        end
+    end
+    return target
+end
+
+local function ApplyUniversalEsp(p)
+    if p == LP then return end
+    
+    local function SetupCharacter(char)
+        if not char then return end
+        char:WaitForChild("Humanoid", 5)
+        
+        local hl = char:FindFirstChild("EspHighlight") or Instance.new("Highlight")
+        hl.Name = "EspHighlight"
+        hl.Parent = char
+        hl.FillColor = Color3.fromRGB(255, 0, 0)
+        hl.FillTransparency = 0.5
+        hl.OutlineColor = Color3.fromRGB(255, 0, 0)
+        hl.OutlineTransparency = 0
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        hl.Enabled = _G.EspActive
+        
+        local gui = char:FindFirstChild("EspNameGui") or Instance.new("BillboardGui")
+        gui.Name = "EspNameGui"
+        gui.Parent = char
+        gui.AlwaysOnTop = true
+        gui.Size = UDim2.new(0, 150, 0, 30)
+        gui.StudsOffset = Vector3.new(0, 3.5, 0)
+        gui.Enabled = _G.EspActive
+        
+        local lbl = gui:FindFirstChild("TextLabel") or Instance.new("TextLabel", gui)
+        lbl.BackgroundTransparency = 1
+        lbl.Size = UDim2.new(1, 0, 1, 0)
+        lbl.Text = p.Name
+        lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+        lbl.TextSize = 13 lbl.Font = Enum.Font.SourceSansBold
+        lbl.TextStrokeTransparency = 0
+    end
+    
+    if p.Character then SetupCharacter(p.Character) end
+    p.CharacterAdded:Connect(SetupCharacter)
+end
+
+for _, p in pairs(Plrs:GetPlayers()) do ApplyUniversalEsp(p) end
+Plrs.PlayerAdded:Connect(ApplyUniversalEsp)
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if _G.FovVisible then
+        local c = _G.RainbowFov and Color3.fromHSV(tick() % 3 / 3, 1, 1) or Color3.fromRGB(255, 0, 0)
+        for _, dot in ipairs(FovDots) do dot.BackgroundColor3 = c end
+    end
+    
+    if _G.AimActive then
+        local t = GetTarget()
+        if t then 
+            local dir = (t.Position - Cam.CFrame.Position)
+            if dir.Magnitude > 0.1 then Cam.CFrame = CFrame.new(Cam.CFrame.Position, t.Position) end
+        end
+    end
+    
+    for _, p in pairs(Plrs:GetPlayers()) do
+        if p.Character then
+            local hl = p.Character:FindFirstChild("EspHighlight")
+            local gui = p.Character:FindFirstChild("EspNameGui")
+            if hl then hl.Enabled = _G.EspActive end
+            if gui then gui.Enabled = _G.EspActive end
+        end
+    end
+end)
